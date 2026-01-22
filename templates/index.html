@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForestSathi | Wildfire Intelligence Nepal</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f2e;
+            --bg-card-hover: #232936;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-orange: #FF4B2B;
+            --accent-orange-light: #FF6B4B;
+            --accent-pink: #FF416C;
+            --accent-green: #2ECC71;
+            --accent-green-dark: #27ae60;
+            --accent-yellow: #f39c12;
+            --accent-blue: #3498db;
+            --accent-red: #e74c3c;
+            --border-color: #2d3748;
+            --border-light: #374151;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            border-radius: 5px;
+            border: 2px solid var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--accent-orange-light), var(--accent-orange));
+        }
+        
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-orange) var(--bg-secondary);
+        }
+        
+        /* Global Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .animate-slide-left {
+            animation: slideInLeft 0.6s ease-out forwards;
+        }
+        
+        .animate-slide-right {
+            animation: slideInRight 0.6s ease-out forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+        
+        /* Stagger delays */
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        
+        /* SVG Icons */
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-lg { width: 24px; height: 24px; }
+        .icon-xl { width: 32px; height: 32px; }
+        
+        /* Navigation */
+        .navbar {
+            background: rgba(17, 24, 39, 0.98);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.875rem 2rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .logo-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        
+        .logo-text span {
+            color: var(--accent-green);
+        }
+        
+        .logo-tagline {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-links a:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .nav-links a.active {
+            background: var(--bg-card);
+            color: var(--accent-orange);
+        }
+        
+        .nav-links a svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding-top: 65px;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            padding: 1.25rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        .stat-icon.fire,
+        .stat-icon.terai,
+        .stat-icon.hills,
+        .stat-icon.himalaya,
+        .stat-icon.ai { 
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-icon svg {
+            fill: var(--text-secondary);
+            transition: fill 0.3s ease;
+        }
+        
+        .stat-item:hover .stat-icon svg {
+            fill: var(--accent-orange);
+        }
+        
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        /* Main Grid Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 130px);
+        }
+        
+        /* Left Panel */
+        .left-panel {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            max-height: calc(100vh - 130px);
+        }
+        
+        .panel-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(46, 204, 113, 0.15);
+        }
+        
+        .section-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--accent-green);
+        }
+        
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .section-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        /* Search Box */
+        .search-wrapper {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 3px rgba(255, 75, 43, 0.15);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+            pointer-events: none;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 75, 43, 0.5);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-primary svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+        
+        /* Error Message */
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--accent-red);
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            display: none;
+        }
+        
+        .error-message.visible {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .error-message svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--accent-red);
+            flex-shrink: 0;
+        }
+        
+        /* Risk Display */
+        .risk-display {
+            display: none;
+        }
+        
+        .risk-display.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .location-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .location-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .location-address {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        
+        .region-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .region-tag.terai {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--accent-green);
+        }
+        
+        .region-tag.hills {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--accent-yellow);
+        }
+        
+        .region-tag.himalayas {
+            background: rgba(52, 152, 219, 0.15);
+            color: var(--accent-blue);
+        }
+        
+        .risk-badge {
+            text-align: center;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            min-width: 90px;
+        }
+        
+        .risk-badge.high {
+            background: rgba(231, 76, 60, 0.15);
+        }
+        
+        .risk-badge.moderate {
+            background: rgba(243, 156, 18, 0.15);
+        }
+        
+        .risk-badge.low {
+            background: rgba(46, 204, 113, 0.15);
+        }
+        
+        .risk-level-text {
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .risk-level-text.high { color: var(--accent-red); }
+        .risk-level-text.moderate { color: var(--accent-yellow); }
+        .risk-level-text.low { color: var(--accent-green); }
+        
+        .confidence-text {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        
+        .analysis-box {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .analysis-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .analysis-label svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--accent-green);
+        }
+        
+        .analysis-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .coordinates-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .coordinates-bar.animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .coordinates-bar svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--accent-green);
+            flex-shrink: 0;
+        }
+        
+        .coords-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        
+        .coords-value {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        
+        /* Info Cards Grid */
+        .info-cards {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .info-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .info-card:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+        
+        .info-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-card-header svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--accent-green);
+        }
+        
+        .info-card-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        
+        .info-card-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .info-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* History Section */
+        .history-section {
+            margin-top: 1rem;
+        }
+        
+        .history-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .history-header svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--accent-orange);
+        }
+        
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.625rem 0.875rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .history-year {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .history-count {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+        
+        /* Right Panel - Map */
+        .right-panel {
+            position: relative;
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .map-frame {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: calc(100vh - 180px);
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 500;
+        }
+        
+        .map-legend {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .legend-title {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+        
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        /* Bottom Cards Section */
+        .bottom-section {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem;
+        }
+        
+        .cards-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        
+        .cards-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .cards-title svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--accent-green);
+        }
+        
+        .cards-title h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .region-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .region-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .region-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .region-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-light);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .region-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .region-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .region-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+        
+        .region-icon.terai { background: linear-gradient(135deg, var(--accent-green), var(--accent-green-dark)); }
+        .region-icon.hills { background: linear-gradient(135deg, var(--accent-yellow), #e67e22); }
+        .region-icon.himalaya { background: linear-gradient(135deg, var(--accent-blue), #2980b9); }
+        
+        .region-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .region-card-elevation {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .region-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .region-stat {
+            text-align: center;
+            padding: 0.625rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .region-stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .region-stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.125rem;
+        }
+        
+        .region-cause {
+            margin-bottom: 0.75rem;
+        }
+        
+        .cause-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+        
+        .cause-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .region-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .feature-item svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--accent-green);
+            flex-shrink: 0;
+        }
+        
+        /* Footer */
+        .footer {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .footer-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .footer-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+        
+        .footer-brand strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .footer-brand span {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        
+        .footer-right {
+            text-align: right;
+        }
+        
+        .footer-right span {
+            color: var(--accent-blue);
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 450px 1fr;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .left-panel {
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            #map {
+                min-height: 400px;
+            }
+            
+            .region-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-bar {
+                gap: 1.5rem;
+                flex-wrap: wrap;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.75rem 1rem;
+            }
+            
+            .logo-text {
+                font-size: 1rem;
+            }
+            
+            .logo-tagline {
+                display: none;
+            }
+            
+            .nav-links a span {
+                display: none;
+            }
+            
+            .stats-bar {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .stat-icon {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .stat-value {
+                font-size: 1rem;
+            }
+            
+            .stat-label {
+                display: none;
+            }
+            
+            .panel-section {
+                padding: 1rem;
+            }
+            
+            .bottom-section {
+                padding: 1.5rem 1rem;
+            }
+            
+            .footer {
+                flex-direction: column;
+                gap: 0.75rem;
+                text-align: center;
+            }
+            
+            .footer-right {
+                text-align: center;
+            }
+            
+            .right-panel {
+                padding: 1rem;
+            }
+            
+            #map {
+                min-height: 350px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-bar {
+                justify-content: center;
+            }
+            
+            .stat-item {
+                flex: 0 0 auto;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-box input {
+                border-radius: 8px;
+            }
+            
+            .search-btn {
+                border-radius: 8px;
+                justify-content: center;
+            }
+            
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Map click-to-scroll behavior */
+        .map-frame.scroll-enabled {
+            outline: 2px solid var(--accent-green);
+            outline-offset: -2px;
+        }
+        
+        .map-scroll-hint {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17, 24, 39, 0.95);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            z-index: 500;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .map-scroll-hint.visible {
+            opacity: 1;
+        }
+        
+        /* Splash Screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .splash-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .splash-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .splash-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .splash-title span {
+            color: var(--accent-green);
+        }
+        
+        .splash-tagline {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .splash-loader {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .splash-loader span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+        
+        .splash-loader span:nth-child(1) { animation-delay: -0.32s; }
+        .splash-loader span:nth-child(2) { animation-delay: -0.16s; }
+        .splash-loader span:nth-child(3) { animation-delay: 0s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        /* Logo scroll-to-top animation */
+        .logo {
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .logo:hover {
+            transform: scale(1.02);
+        }
+        
+        .logo:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="ForestSathi">
+        </div>
+        <div class="splash-title">Forest<span>Sathi</span></div>
+        <div class="splash-tagline">Wildfire Intelligence Platform</div>
+        <div class="splash-loader">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="javascript:void(0)" class="logo" id="navLogo" title="Scroll to top">
+                <div class="logo-icon">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ForestSathi">
+                </div>
+                <div class="logo-content">
+                    <span class="logo-text">Forest<span>Sathi</span></span>
+                    <span class="logo-tagline">Wildfire Intelligence</span>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="active">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/about">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <span>About</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Stats Bar -->
+        <section class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon fire">
+                    <svg viewBox="0 0 24 24"><path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-4.5 3-6 0 2 1 3 2 3 0-3 2-6 5-8 1 2 1.5 4 1.5 6 0 1.5-.5 3-1.5 4 1.5-1 2.5-2.5 3-4.5 1.5 2 2 4 2 6 0 3.866-3.134 7-7 7z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ "{:,}".format(stats.total_fires|default(190764)|int) }}</div>
+                    <div class="stat-label">Total Fire Events</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon terai">
+                    <svg viewBox="0 0 24 24"><path d="M12 3L4 9v12h16V9l-8-6zm0 14.5c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ "{:,}".format(stats.terai_fires|default(45000)|int) }}</div>
+                    <div class="stat-label">Terai Region</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon hills">
+                    <svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ "{:,}".format(stats.hills_fires|default(85000)|int) }}</div>
+                    <div class="stat-label">Hills Region</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon himalaya">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l7 14H5l7-14z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ "{:,}".format(stats.himalaya_fires|default(60000)|int) }}</div>
+                    <div class="stat-label">Himalayan Region</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon ai">
+                    <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79 2.73 2.71 7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58 3.51-3.47 9.14-3.47 12.65 0L21 3v7.12z"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" style="color: var(--accent-green);">98.7%</div>
+                    <div class="stat-label">Model Accuracy</div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel - Search & Results -->
+            <div class="left-panel">
+                <!-- Search Section -->
+                <div class="panel-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Location Search</h2>
+                            <p class="section-subtitle">AI-powered fire risk prediction</p>
+                        </div>
+                    </div>
+                    
+                    <div class="search-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" 
+                               id="searchInput" 
+                               class="search-input" 
+                               placeholder="Enter location (e.g., Chitwan, Pokhara)"
+                               autocomplete="off">
+                    </div>
+                    
+                    <button id="searchBtn" class="btn-primary" onclick="searchLocation()">
+                        <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+                        Analyze Risk
+                    </button>
+                    
+                    <div id="errorMessage" class="error-message">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="riskDisplay" class="panel-section risk-display">
+                    <div class="location-header">
+                        <div>
+                            <h3 class="location-name" id="locationName"></h3>
+                            <p class="location-address" id="locationAddress"></p>
+                            <span id="regionBadge" class="region-tag"></span>
+                        </div>
+                        <div id="riskBadge" class="risk-badge">
+                            <div id="riskLevel" class="risk-level-text"></div>
+                            <div id="confidence" class="confidence-text"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-box">
+                        <div class="analysis-label">
+                            <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79 2.73 2.71 7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58 3.51-3.47 9.14-3.47 12.65 0L21 3v7.12z"/></svg>
+                            AI Analysis
+                        </div>
+                        <p class="analysis-text" id="riskReason"></p>
+                    </div>
+                    
+                    <div class="coordinates-bar" id="coordinates">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <div>
+                            <div class="coords-label">Coordinates</div>
+                            <div class="coords-value" id="coordsText">-</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Info Cards -->
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <div class="info-card-header">
+                                <svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/></svg>
+                                <span class="info-card-title">Elevation Zone</span>
+                            </div>
+                            <div class="info-card-value" id="elevationValue">-</div>
+                            <div class="info-card-desc" id="elevationDesc"></div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-header">
+                                <svg viewBox="0 0 24 24"><path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-4.5 3-6 0 2 1 3 2 3 0-3 2-6 5-8 1 2 1.5 4 1.5 6 0 1.5-.5 3-1.5 4 1.5-1 2.5-2.5 3-4.5 1.5 2 2 4 2 6 0 3.866-3.134 7-7 7z"/></svg>
+                                <span class="info-card-title">Primary Cause</span>
+                            </div>
+                            <div class="info-card-value" id="causeValue">-</div>
+                            <div class="info-card-desc" id="causeDesc"></div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-header">
+                                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+                                <span class="info-card-title">Peak Season</span>
+                            </div>
+                            <div class="info-card-value" id="seasonValue">-</div>
+                            <div class="info-card-desc" id="seasonDesc"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ignition Probability Section -->
+                    <div class="ignition-section" id="ignitionSection" style="margin-top: 1rem; padding: 1rem; background: rgba(255, 75, 43, 0.05); border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div class="ignition-header" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--accent-orange);"><path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-4.5 3-6 0 2 1 3 2 3 0-3 2-6 5-8 1 2 1.5 4 1.5 6 0 1.5-.5 3-1.5 4 1.5-1 2.5-2.5 3-4.5 1.5 2 2 4 2 6 0 3.866-3.134 7-7 7z"/></svg>
+                            <span style="font-weight: 600; color: var(--text-primary);">Ignition Probability</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                            <div id="ignitionProb" style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);">--%</div>
+                            <div id="ignitionLevel" style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">--</div>
+                        </div>
+                        <div id="ignitionFactors" style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                            <!-- Factors will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Fire History -->
+                    <div class="history-section" id="historySection">
+                        <div class="history-header">
+                            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                            <span class="history-title" id="historyTitle">Fire Events History (Search a location)</span>
+                        </div>
+                        <div class="history-list" id="historyList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Initial State Info -->
+                <div id="initialInfo" class="panel-section">
+                    <div class="info-card" style="border: none; background: transparent;">
+                        <div class="info-card-header">
+                            <svg viewBox="0 0 24 24" style="fill: var(--accent-orange);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            <span class="info-card-title">Getting Started</span>
+                        </div>
+                        <p class="info-card-desc" style="margin-top: 0.5rem; line-height: 1.6;">
+                            Enter any location in Nepal to analyze wildfire risk using our AI model trained on 190,000+ NASA FIRMS fire events.
+                        </p>
+                        <p class="info-card-desc" style="margin-top: 0.75rem; color: var(--text-muted);">
+                            Try: Chitwan, Pokhara, Dolakha, Bardiya, Solukhumbu
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Map -->
+            <div class="right-panel">
+                <div class="map-frame" id="mapFrame">
+                    <div id="map"></div>
+                    <div class="map-scroll-hint" id="mapScrollHint">Click map to enable zoom</div>
+                    <div class="map-overlay">
+                        <div class="map-legend">
+                            <div class="legend-title">Fire Intensity</div>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: #2ECC71;"></div>
+                                    <span>Low</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: #f39c12;"></div>
+                                    <span>Moderate</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: #FF4B2B;"></div>
+                                    <span>High</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: #FF416C;"></div>
+                                    <span>Extreme</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Section - Regional Cards -->
+            <section class="bottom-section">
+                <div class="cards-header">
+                    <div class="cards-title">
+                        <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                        <h2>Regional Fire Intelligence</h2>
+                    </div>
+                </div>
+                
+                <div class="region-cards">
+                    <!-- Terai -->
+                    <div class="region-card">
+                        <div class="region-card-header">
+                            <div class="region-icon terai">
+                                <svg viewBox="0 0 24 24"><path d="M12 3L4 9v12h16V9l-8-6zm0 14.5c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/></svg>
+                            </div>
+                            <div>
+                                <div class="region-card-title">Terai Plains</div>
+                                <div class="region-card-elevation">Below 500m elevation</div>
+                            </div>
+                        </div>
+                        <div class="region-stats">
+                            <div class="region-stat">
+                                <div class="region-stat-value">{{ "{:,}".format(stats.terai_fires|default(45000)|int) }}</div>
+                                <div class="region-stat-label">Fire Events</div>
+                            </div>
+                            <div class="region-stat">
+                                <div class="region-stat-value">Mar-May</div>
+                                <div class="region-stat-label">Peak Season</div>
+                            </div>
+                        </div>
+                        <div class="region-cause">
+                            <div class="cause-label">Primary Fire Cause</div>
+                            <div class="cause-value" style="color: var(--accent-green);">Agricultural Residue Burning</div>
+                        </div>
+                        <div class="region-features">
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Dense agricultural activity
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Hot and dry climate conditions
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Grassland ecosystems at risk
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hills -->
+                    <div class="region-card">
+                        <div class="region-card-header">
+                            <div class="region-icon hills">
+                                <svg viewBox="0 0 24 24"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/></svg>
+                            </div>
+                            <div>
+                                <div class="region-card-title">Mahabharat Hills</div>
+                                <div class="region-card-elevation">500m - 3,000m elevation</div>
+                            </div>
+                        </div>
+                        <div class="region-stats">
+                            <div class="region-stat">
+                                <div class="region-stat-value">{{ "{:,}".format(stats.hills_fires|default(85000)|int) }}</div>
+                                <div class="region-stat-label">Fire Events</div>
+                            </div>
+                            <div class="region-stat">
+                                <div class="region-stat-value">Apr-Jun</div>
+                                <div class="region-stat-label">Peak Season</div>
+                            </div>
+                        </div>
+                        <div class="region-cause">
+                            <div class="cause-label">Primary Fire Cause</div>
+                            <div class="cause-value" style="color: var(--accent-yellow);">Dry Pine Needle Accumulation</div>
+                        </div>
+                        <div class="region-features">
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Chir pine forest dominance
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Steep terrain accelerates spread
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Limited road access for response
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Himalayas -->
+                    <div class="region-card">
+                        <div class="region-card-header">
+                            <div class="region-icon himalaya">
+                                <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4l7 14H5l7-14z"/></svg>
+                            </div>
+                            <div>
+                                <div class="region-card-title">High Himalayas</div>
+                                <div class="region-card-elevation">Above 3,000m elevation</div>
+                            </div>
+                        </div>
+                        <div class="region-stats">
+                            <div class="region-stat">
+                                <div class="region-stat-value">{{ "{:,}".format(stats.himalaya_fires|default(60000)|int) }}</div>
+                                <div class="region-stat-label">Fire Events</div>
+                            </div>
+                            <div class="region-stat">
+                                <div class="region-stat-value">Mar-May</div>
+                                <div class="region-stat-label">Peak Season</div>
+                            </div>
+                        </div>
+                        <div class="region-cause">
+                            <div class="cause-label">Primary Fire Cause</div>
+                            <div class="cause-value" style="color: var(--accent-blue);">Natural Dry Shrubs / High Winds</div>
+                        </div>
+                        <div class="region-features">
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Alpine shrub vegetation
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Strong seasonal wind patterns
+                            </div>
+                            <div class="feature-item">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                Remote terrain limits response
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-left">
+                    <div class="footer-logo">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="ForestSathi">
+                    </div>
+                    <div class="footer-brand">
+                        <strong>ForestSathi</strong>
+                        <span>Wildfire Intelligence Platform for Nepal</span>
+                    </div>
+                </div>
+                <div class="footer-right">
+                    Data: <span>NASA FIRMS</span> (MODIS/VIIRS) | <span>ICIMOD Nepal</span>
+                </div>
+            </footer>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <script>
+        // Initialize map with scroll zoom disabled by default
+        const map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: false
+        }).setView([28.0, 84.0], 7);
+        
+        // Map scroll behavior - click/touch to enable zoom
+        const mapFrame = document.getElementById('mapFrame');
+        const mapScrollHint = document.getElementById('mapScrollHint');
+        let mapScrollEnabled = false;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Disable map dragging on mobile until activated
+        if (isMobile) {
+            map.dragging.disable();
+            mapScrollHint.textContent = 'Tap map to enable interaction';
+        }
+        
+        // Show hint on hover (desktop)
+        mapFrame.addEventListener('mouseenter', function() {
+            if (!mapScrollEnabled && !isMobile) {
+                mapScrollHint.classList.add('visible');
+            }
+        });
+        
+        mapFrame.addEventListener('mouseleave', function() {
+            mapScrollHint.classList.remove('visible');
+            if (!isMobile) {
+                mapScrollEnabled = false;
+                mapFrame.classList.remove('scroll-enabled');
+                map.scrollWheelZoom.disable();
+            }
+        });
+        
+        // Enable scroll zoom on click (desktop)
+        mapFrame.addEventListener('click', function(e) {
+            if (!mapScrollEnabled) {
+                mapScrollEnabled = true;
+                mapFrame.classList.add('scroll-enabled');
+                map.scrollWheelZoom.enable();
+                if (isMobile) {
+                    map.dragging.enable();
+                }
+                mapScrollHint.classList.remove('visible');
+            }
+        });
+        
+        // Mobile touch handling - single tap to activate
+        if (isMobile) {
+            mapScrollHint.classList.add('visible');
+            
+            mapFrame.addEventListener('touchstart', function(e) {
+                if (!mapScrollEnabled) {
+                    e.preventDefault();
+                    mapScrollEnabled = true;
+                    mapFrame.classList.add('scroll-enabled');
+                    map.dragging.enable();
+                    map.scrollWheelZoom.enable();
+                    mapScrollHint.classList.remove('visible');
+                }
+            }, { passive: false });
+            
+            // Deactivate when touching outside the map
+            document.addEventListener('touchstart', function(e) {
+                if (mapScrollEnabled && !mapFrame.contains(e.target)) {
+                    mapScrollEnabled = false;
+                    mapFrame.classList.remove('scroll-enabled');
+                    map.dragging.disable();
+                    map.scrollWheelZoom.disable();
+                    mapScrollHint.classList.add('visible');
+                }
+            });
+        }
+        
+        // Dark tile layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Store references
+        let currentMarker = null;
+        let currentCircle = null;
+        let heatLayer = null;
+        
+        // Load heatmap data
+        async function loadHeatmap() {
+            try {
+                const response = await fetch('/api/heatmap');
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const heatData = data.map(point => [point.lat, point.lng, point.intensity]);
+                    
+                    heatLayer = L.heatLayer(heatData, {
+                        radius: 12,
+                        blur: 15,
+                        maxZoom: 10,
+                        gradient: {
+                            0.2: '#2ECC71',
+                            0.5: '#f39c12',
+                            0.8: '#FF4B2B',
+                            1.0: '#FF416C'
+                        }
+                    }).addTo(map);
+                }
+            } catch (error) {
+                console.error('Error loading heatmap:', error);
+            }
+        }
+        
+        // Search location
+        async function searchLocation() {
+            const input = document.getElementById('searchInput');
+            const btn = document.getElementById('searchBtn');
+            const errorMsg = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const riskDisplay = document.getElementById('riskDisplay');
+            const initialInfo = document.getElementById('initialInfo');
+            
+            const location = input.value.trim();
+            
+            if (!location) {
+                showError('Please enter a location name');
+                return;
+            }
+            
+            // Show loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+            errorMsg.classList.remove('visible');
+            riskDisplay.classList.remove('visible');
+            
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    showError(data.error || 'Location not found');
+                    return;
+                }
+                
+                // Hide initial info, show results
+                initialInfo.style.display = 'none';
+                displayResults(data);
+                
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg> Analyze Risk`;
+            }
+        }
+        
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorMsg.classList.add('visible');
+        }
+        
+        function displayResults(data) {
+            const riskDisplay = document.getElementById('riskDisplay');
+            
+            // Location info
+            document.getElementById('locationName').textContent = data.location.name;
+            document.getElementById('locationAddress').textContent = data.location.address;
+            
+            // Region badge
+            const badge = document.getElementById('regionBadge');
+            badge.textContent = data.region.name;
+            badge.className = 'region-tag ' + data.region.class;
+            
+            // Risk level
+            const riskLevelLower = data.prediction.risk_level.toLowerCase();
+            const riskBadge = document.getElementById('riskBadge');
+            riskBadge.className = 'risk-badge ' + riskLevelLower;
+            
+            const riskLevel = document.getElementById('riskLevel');
+            riskLevel.textContent = data.prediction.risk_level;
+            riskLevel.className = 'risk-level-text ' + riskLevelLower;
+            
+            // Confidence
+            document.getElementById('confidence').textContent = data.prediction.confidence + '% confidence';
+            
+            // Analysis reason
+            document.getElementById('riskReason').textContent = data.prediction.reason;
+            
+            // Coordinates with animation
+            const coordsBar = document.getElementById('coordinates');
+            coordsBar.classList.remove('animate-in');
+            document.getElementById('coordsText').textContent = 
+                data.location.latitude.toFixed(4) + '°N, ' + data.location.longitude.toFixed(4) + '°E';
+            // Trigger animation after a small delay
+            setTimeout(() => coordsBar.classList.add('animate-in'), 100);
+            
+            // Region info cards
+            const regionInfo = data.region.info;
+            document.getElementById('elevationValue').textContent = regionInfo.elevation;
+            document.getElementById('elevationDesc').textContent = data.region.name + ' ecological zone';
+            
+            document.getElementById('causeValue').textContent = regionInfo.primary_cause;
+            document.getElementById('causeDesc').textContent = 'Most common ignition source';
+            
+            document.getElementById('seasonValue').textContent = regionInfo.peak_season;
+            document.getElementById('seasonDesc').textContent = 'Highest fire activity period';
+            
+            // Display ignition probability
+            displayIgnitionProbability(data.ignition);
+            
+            // Display actual fire history from NASA FIRMS data
+            displayFireHistory(data.fire_history, data.location.name);
+            
+            // Show display
+            riskDisplay.classList.add('visible');
+            
+            // Update map with marker and location-specific heatmap
+            updateMapMarker(data);
+            
+            // Update heatmap with location-specific data
+            if (data.location_heatmap && data.location_heatmap.length > 0) {
+                updateLocationHeatmap(data.location_heatmap);
+            }
+        }
+        
+        function displayIgnitionProbability(ignition) {
+            if (!ignition) return;
+            
+            const probEl = document.getElementById('ignitionProb');
+            const levelEl = document.getElementById('ignitionLevel');
+            const factorsEl = document.getElementById('ignitionFactors');
+            
+            // Set probability value
+            probEl.textContent = ignition.probability + '%';
+            
+            // Set level badge
+            levelEl.textContent = ignition.level;
+            const levelColors = {
+                'High': { bg: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c' },
+                'Moderate': { bg: 'rgba(243, 156, 18, 0.2)', color: '#f39c12' },
+                'Low': { bg: 'rgba(46, 204, 113, 0.2)', color: '#2ECC71' }
+            };
+            const colors = levelColors[ignition.level] || levelColors['Moderate'];
+            levelEl.style.background = colors.bg;
+            levelEl.style.color = colors.color;
+            
+            // Set probability color based on value
+            if (ignition.probability >= 55) {
+                probEl.style.color = '#e74c3c';
+            } else if (ignition.probability >= 30) {
+                probEl.style.color = '#f39c12';
+            } else {
+                probEl.style.color = '#2ECC71';
+            }
+            
+            // Display factors
+            if (ignition.factors && ignition.factors.length > 0) {
+                factorsEl.innerHTML = ignition.factors.map(f => 
+                    `<div style="margin-bottom: 0.35rem;">• ${f}</div>`
+                ).join('');
+            }
+        }
+        
+        function displayFireHistory(fireHistory, locationName) {
+            const historyList = document.getElementById('historyList');
+            const historyTitle = document.getElementById('historyTitle');
+            
+            if (!fireHistory || !fireHistory.yearly_counts || Object.keys(fireHistory.yearly_counts).length === 0) {
+                // Fallback if no data
+                historyList.innerHTML = '<div class="history-item"><span class="history-year">No data</span><span class="history-count">No fires recorded in this area</span></div>';
+                historyTitle.textContent = `Fire Events History (${locationName})`;
+                return;
+            }
+            
+            // Update title to show it's location-specific
+            const radiusText = fireHistory.search_radius_km ? `${fireHistory.search_radius_km}km radius` : '';
+            historyTitle.textContent = `NASA VIIRS Fire Data - ${locationName} (${radiusText})`;
+            
+            // Sort years and display
+            const yearlyCounts = fireHistory.yearly_counts;
+            const years = Object.keys(yearlyCounts).sort((a, b) => parseInt(b) - parseInt(a)); // Most recent first
+            
+            let html = '';
+            
+            // Stats summary first
+            if (fireHistory.stats) {
+                const stats = fireHistory.stats;
+                html += `
+                    <div class="history-item" style="background: rgba(255, 75, 43, 0.1); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                        <span class="history-year" style="color: var(--accent-orange); font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text-secondary);"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> Total Fires</span>
+                        <span class="history-count" style="color: var(--accent-orange); font-weight: 700;">${stats.total_nearby_fires.toLocaleString()}</span>
+                    </div>
+                    <div class="history-item" style="font-size: 0.85rem;">
+                        <span class="history-year" style="display: flex; align-items: center; gap: 0.4rem;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text-secondary);"><path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-4.5 3-6 0 2 1 3 2 3 0-3 2-6 5-8 1 2 1.5 4 1.5 6 0 1.5-.5 3-1.5 4 1.5-1 2.5-2.5 3-4.5 1.5 2 2 4 2 6 0 3.866-3.134 7-7 7z"/></svg> Avg Intensity</span>
+                        <span class="history-count">${stats.avg_brightness}K brightness</span>
+                    </div>
+                    <div class="history-item" style="font-size: 0.85rem;">
+                        <span class="history-year" style="display: flex; align-items: center; gap: 0.4rem;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text-secondary);"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg> Fire Density</span>
+                        <span class="history-count">${stats.fire_density_per_100sqkm} per 100km²</span>
+                    </div>
+                    <div class="history-item" style="font-size: 0.85rem;">
+                        <span class="history-year" style="display: flex; align-items: center; gap: 0.4rem;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text-secondary);"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg> Peak Month</span>
+                        <span class="history-count">${stats.peak_month}</span>
+                    </div>
+                    <div class="history-item" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                        <span class="history-year" style="display: flex; align-items: center; gap: 0.4rem;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text-secondary);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Main Cause</span>
+                        <span class="history-count" style="font-size: 0.75rem;">${stats.primary_cause}</span>
+                    </div>
+                `;
+            }
+            
+            // Yearly breakdown
+            html += `<div style="font-size: 0.75rem; color: var(--text-muted); margin: 0.75rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Annual Distribution (${fireHistory.stats?.first_record || ''} - ${fireHistory.stats?.last_record || ''})</div>`;
+            
+            html += years.slice(0, 5).map(year => `
+                <div class="history-item">
+                    <span class="history-year">${year}</span>
+                    <span class="history-count">${parseInt(yearlyCounts[year]).toLocaleString()} events</span>
+                </div>
+            `).join('');
+            
+            historyList.innerHTML = html;
+        }
+        
+        function updateLocationHeatmap(heatmapData) {
+            // Remove existing heatLayer
+            if (heatLayer) {
+                map.removeLayer(heatLayer);
+            }
+            
+            // Add new location-specific heatmap
+            const heatData = heatmapData.map(point => [point.lat, point.lng, point.intensity]);
+            heatLayer = L.heatLayer(heatData, {
+                radius: 15,
+                blur: 18,
+                maxZoom: 12,
+                gradient: {
+                    0.2: '#2ECC71',
+                    0.4: '#f1c40f',
+                    0.6: '#f39c12',
+                    0.8: '#FF4B2B',
+                    1.0: '#FF416C'
+                }
+            }).addTo(map);
+        }
+        
+        function updateMapMarker(data) {
+            // Remove existing markers
+            if (currentMarker) map.removeLayer(currentMarker);
+            if (currentCircle) map.removeLayer(currentCircle);
+            
+            const lat = data.location.latitude;
+            const lng = data.location.longitude;
+            const riskLevel = data.prediction.risk_level.toLowerCase();
+            
+            const colors = {
+                high: '#e74c3c',
+                moderate: '#f39c12',
+                low: '#2ECC71'
+            };
+            
+            // Custom icon
+            const icon = L.divIcon({
+                html: `<div style="
+                    background: ${colors[riskLevel]};
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                "></div>`,
+                className: 'custom-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            // Add marker
+            currentMarker = L.marker([lat, lng], { icon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="font-family: Inter, sans-serif; padding: 4px;">
+                        <strong style="font-size: 14px;">${data.location.name}</strong><br>
+                        <span style="color: ${colors[riskLevel]}; font-weight: 600;">Risk: ${data.prediction.risk_level}</span><br>
+                        <span style="color: #666; font-size: 12px;">${data.region.name}</span>
+                    </div>
+                `)
+                .openPopup();
+            
+            // Add circle
+            currentCircle = L.circle([lat, lng], {
+                color: colors[riskLevel],
+                fillColor: colors[riskLevel],
+                fillOpacity: 0.15,
+                radius: 8000,
+                weight: 2
+            }).addTo(map);
+            
+            // Pan to location
+            map.setView([lat, lng], 10, { animate: true });
+        }
+        
+        // Enter key support
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchLocation();
+        });
+        
+        // Load heatmap on page load and hide splash screen
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHeatmap();
+            
+            // Hide splash screen - only show on first load or refresh
+            const splashScreen = document.getElementById('splashScreen');
+            if (sessionStorage.getItem('splashShown')) {
+                splashScreen.classList.add('hidden');
+            } else {
+                setTimeout(function() {
+                    splashScreen.classList.add('hidden');
+                    sessionStorage.setItem('splashShown', 'true');
+                }, 1500);
+            }
+            
+            // Scroll reveal animation for region cards
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry, index) {
+                    if (entry.isIntersecting) {
+                        setTimeout(function() {
+                            entry.target.classList.add('visible');
+                        }, index * 100);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all region cards
+            document.querySelectorAll('.region-card').forEach(function(card) {
+                observer.observe(card);
+            });
+            
+            // Logo scroll-to-top functionality
+            const navLogo = document.getElementById('navLogo');
+            navLogo.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
