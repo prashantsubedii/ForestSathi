@@ -939,16 +939,19 @@ def not_found(e):
 def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
+# ======================= INITIALIZE ON MODULE LOAD (for Gunicorn) =======================
+# This ensures resources are loaded when gunicorn imports the module
+print("🌲 ForestSathi - Loading resources...")
+load_resources()
+print(f"   📊 Fire data: {'Loaded' if fire_data is not None else 'Not found'}")
+if fire_data is not None:
+    print(f"   📈 Total records: {len(fire_data):,}")
+    print(f"   📅 Data period: {int(fire_data['year'].min())}-{int(fire_data['year'].max())}")
+    print(f"   🗺️ Grid cells cached: {len(location_stats_cache):,}")
+print(f"   🤖 Model: {'Loaded' if model is not None else 'Using data-driven fallback'}")
+print(f"   🔥 Heatmap points: {len(heatmap_data):,}")
+
 # ======================= MAIN =======================
 if __name__ == '__main__':
-    print("🌲 ForestSathi - Loading resources...")
-    load_resources()
-    print(f"   📊 Fire data: {'Loaded' if fire_data is not None else 'Not found'}")
-    if fire_data is not None:
-        print(f"   📈 Total records: {len(fire_data):,}")
-        print(f"   📅 Data period: {int(fire_data['year'].min())}-{int(fire_data['year'].max())}")
-        print(f"   🗺️ Grid cells cached: {len(location_stats_cache):,}")
-    print(f"   🤖 Model: {'Loaded' if model is not None else 'Using data-driven fallback'}")
-    print(f"   🔥 Heatmap points: {len(heatmap_data):,}")
-    print("\n🚀 Starting server...")
+    print("\n🚀 Starting development server...")
     app.run(debug=True, host='0.0.0.0', port=5000)

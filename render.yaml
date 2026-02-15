@@ -3,7 +3,7 @@ services:
     name: forestsathi
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app_flask:app
+    startCommand: gunicorn app_flask:app --timeout 120 --workers 2
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
